@@ -1,9 +1,8 @@
-setwd("D:/analysis/sns_data_crawling")
-
 # 0. 분석 환경 세팅 -------------------------------------------------------------
 # - twitter에서 데이터를 수집하기 위해서는 먼저 twitter에서 개발자 인증을 받아야 합니다.
 # - 참고 : http://www.evernote.com/l/ANJAXXo73qtGc5Ncsa-uTWmsE4zDdoS-9VA/
 # - 트위터 API v1.1 Docu. : https://developer.twitter.com/en/docs/twitter-api/v1
+source("script/ini.r")
 
 # Twitter API URL
 my_reqURL <- "https://api.twitter.com/oauth/request_token"
