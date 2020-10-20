@@ -8,6 +8,9 @@
 # User-specific files
 .Ruserdata
 
+# private file
+script/ini.r
+
 # Example code in package build process
 *-Ex.R
 

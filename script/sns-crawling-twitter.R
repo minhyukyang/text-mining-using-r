@@ -11,10 +11,10 @@ my_accessURL <- "https://api.twitter.com/oauth/access_token"
 my_authURL <- "https://api.twitter.com/oauth/authorize"
 
 # Twitter developer key and token
-my_consumerKey <- "rwl0tFuE86r3aolm64Q4Poc2t"
-my_consumerSecret <- "ujcba6lfgc2XYxyeqRCiH3Q7WSvCqSU6DW3sJxFSFn2zdtxpvW"
-my_accesstoken <- "762277206752043009-AfAqRc6zVeykllFJdZDWnmSJJ4CYsIN"
-my_accesstokensecret <- "90uiO7v73HQuaj6PbXhl0sadKvUvw6SWB2MsCC0zzFUD9"
+my_consumerKey <- twitter_consumerKey
+my_consumerSecret <- twitter_consumerSecret
+my_accesstoken <- twitter_accesstoken
+my_accesstokensecret <- twitter_accesstokensecret
 
 # # sentiment scoring
 # score.sentiment = function(sentences, pos.words, neg.words, .progress='none')
