@@ -2,6 +2,7 @@
 # - twitter에서 데이터를 수집하기 위해서는 먼저 twitter에서 개발자 인증을 받아야 합니다.
 # - 참고 : http://www.evernote.com/l/ANJAXXo73qtGc5Ncsa-uTWmsE4zDdoS-9VA/
 # - 트위터 API v1.1 Docu. : https://developer.twitter.com/en/docs/twitter-api/v1
+
 source("script/ini.r")
 
 # Twitter API URL
@@ -15,59 +16,19 @@ my_consumerSecret <- twitter_consumerSecret
 my_accesstoken <- twitter_accesstoken
 my_accesstokensecret <- twitter_accesstokensecret
 
-# # sentiment scoring
-# score.sentiment = function(sentences, pos.words, neg.words, .progress='none')
-# {
-#   require(plyr)
-#   require(stringr)
-#   
-#   # we got a vector of sentences. plyr will handle a list or a vector as an "l" for us
-#   # we want a simple array of scores back, so we use "l" + "a" + "ply" = laply:
-#   scores = laply(sentences, function(sentence, pos.words, neg.words) {
-#     
-#     # clean up sentences with R's regex-driven global substitute, gsub():
-#     sentence = gsub('[[:punct:]]', '', sentence)
-#     sentence = gsub('[[:cntrl:]]', '', sentence)
-#     sentence = gsub('\\d+', '', sentence)
-#     # and convert to lower case:
-#     sentence = tolower(sentence)
-#     
-#     # split into words. str_split is in the stringr package
-#     word.list = str_split(sentence, '\\s+')
-#     # sometimes a list() is one level of hierarchy too much
-#     words = unlist(word.list)
-#     
-#     # compare our words to the dictionaries of positive & negative terms
-#     pos.matches = match(words, pos.words)
-#     neg.matches = match(words, neg.words)
-#     
-#     # match() returns the position of the matched term or NA
-#     # we just want a TRUE/FALSE:
-#     pos.matches = !is.na(pos.matches)
-#     neg.matches = !is.na(neg.matches)
-#     
-#     # and conveniently enough, TRUE/FALSE will be treated as 1/0 by sum():
-#     score = sum(pos.matches) - sum(neg.matches)
-#     
-#     return(score)
-#   }, pos.words, neg.words, .progress=.progress )
-#   
-#   scores.df = data.frame(score=scores, text=sentences)
-#   return(scores.df)
-# }
-
 # 1. Twitter 에서 데이터 가져오기 --------------------------------------------------
 
 # 패키지 설치nstall.packages("base64enc")
-install.packages("RCurl")
-install.packages("twitteR")
-install.packages("ROAuth")
+# install.packages("RCurl")
+# install.packages("twitteR")
+# install.packages("ROAuth")
 
 # 패키지 로드
-library(base64enc)
-library(RCurl)
+# library(base64enc)
+# library(RCurl)
+# library(ROAuth)
 library(twitteR)
-library(ROAuth)
+library(tidyverse)
 
 # 1.1 환경 설정 ####
 
@@ -84,7 +45,7 @@ accesstokensecret <- my_accesstokensecret
 
 # 인증키 설정 및 다운
 options(RCurloptions = list(cainfo = system.file("CurlSSL", "cacert.pem", packge = "RCurl")))
-download.file(url = "https://curl.haxx.se/ca/cacert.pem", destfile = "cacert.pem")
+download.file(url = "https://curl.haxx.se/ca/cacert.pem", destfile = "data/cacert.pem")
 
 # 인증처리
 setup_twitter_oauth(consumerKey, consumerSecret, accesstoken, accesstokensecret)
@@ -92,7 +53,8 @@ setup_twitter_oauth(consumerKey, consumerSecret, accesstoken, accesstokensecret)
 # 1.2 트위터 데이터 수집 ####
 # https://r-pyomega.tistory.com/16
 
-getCurRateLimitInfo()
+# API로 제공되는 정보 확인
+getCurRateLimitInfo() 
 
 # 계정이 남긴 글을 가져오고 싶을 때 사용
 # SeoulJazzFest.tweets <- searchTwitter("@inhauniv") # @ 계정, n 가져올 데이터 건수
@@ -101,11 +63,19 @@ getCurRateLimitInfo()
 
 # 해당 단어를 언급한 글을 가져오고 싶을 때 사용
 keyword <- enc2utf8("인하대") # 키워드 지정
-tweets_inha <- searchTwitter(keyword, n=500)
 
-tweets_inha_df <- twListToDF(tweets_inha)
+# tweets_inha <- searchTwitter(keyword, n=500, lang="ko", since="2020-01-01", until="2020-10-23")
+# keyword_ko <- enc2utf8( )에 할당한 키워드
+# n = 가져오는 게시글 개수
+# lang = 언어 (국어 ="kr" / 영어 = "en" / 일본어 = "ja)
+# since = 시작일
+# until = 종료일
+
+tweets_inha <- searchTwitter(keyword, n=500) # 최근 500개 tweet 수집
+tweets_inha_df <- twListToDF(tweets_inha) # DataFrame 형태로 변경
 str(tweets_inha_df)
-tweets_inha_df %>% filter(isRetweet == TRUE)
+
+tweets_inha_df %>% filter(isRetweet == TRUE) # 리트윗 여부 확인 
 tweets_inha_df %>% filter(isRetweet == FALSE)
 
 # 2. 데이터 감성분석 ####
@@ -116,20 +86,18 @@ tweets_inha_df %>% filter(isRetweet == FALSE)
 # 2.1 환경설정
 
 # 패키지 설치
-install.packages("rJava")
-install.packages("KoNLP")
+# install.packages("rJava")
+# install.packages("KoNLP")
 
 # 패키지 로드
 # - 다운로드 : https://java.com/ko/
 # Sys.setenv(JAVA_HOME="C:/Program Files/Java/jre1.8.0_65") # for 64-bit version
-library(rJava)
+# library(rJava)
 library(KoNLP)
-library(tidyverse)
 
 # 2.2 긍부정 사전 로드
-
-positive.dic <- readLines("dic/positive_words.txt", encoding="UTF-8") #긍정사전 로딩
-negative.dic <- readLines("dic/negative_words.txt", encoding="UTF-8") #부정사전 로딩
+# positive.dic <- readLines("dic/positive_words.txt", encoding="UTF-8") #긍정사전 로딩
+# negative.dic <- readLines("dic/negative_words.txt", encoding="UTF-8") #부정사전 로딩
 
 # Twitter 데이터 중 Text 추출
 # head(Busanhang.tweets)
@@ -166,15 +134,12 @@ tweets.2 <- gsub("[a-zA-Z]", "", tweets.2)
 tweets.2 <- gsub("  ", "", tweets.2)
 
 # 감성 분석
-result <- score.sentiment(tweets.2, positive.dic, negative.dic)
-result[result$score!=0,] # 감성분석에 걸린 결과 확인 
+# result <- score.sentiment(tweets.2, positive.dic, negative.dic)
+# result[result$score!=0,] # 감성분석에 걸린 결과 확인 
 
 # 3. WordCloud 그려보기 ####
 
-# 패키지 설치
-install.packages("wordcloud")
-
-# 패키지 로드
+# install.packages("wordcloud2")
 library(wordcloud2)
 
 # 데이터 처리
