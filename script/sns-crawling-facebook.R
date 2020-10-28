@@ -1,16 +1,17 @@
-
 # facebook for developers : https://developers.facebook.com/?locale=ko_KR
 # facebook app 만들기 : http://www.econovation.co.kr/ecnvb/%ED%8E%98%EC%9D%B4%EC%8A%A4%EB%B6%81-%EC%95%B1-%EB%A7%8C%EB%93%A4%EA%B8%B0/
 # R분석 : http://airpage.org/xe/language_data/22905
 # R분석2 : https://brunch.co.kr/@dugi/2
 
+source("script/ini.r")
+
 #필요 패키지
-install.packages("Rfacebook")
+# install.packages("Rfacebook")
 library(Rfacebook)
 
 #페이스북 앱id 정보와 secret 값 입
-fbAuth = fbOAuth(app_id = "2507109199588116", 
-                 app_secret = "44941b49ea521aea0aaff9b83658edb4",
+fbAuth = fbOAuth(app_id = facebook_app_id, 
+                 app_secret = facebook_app_secret,
                  extended_permissions = FALSE)
 
 start_date = '2020/10/01'
