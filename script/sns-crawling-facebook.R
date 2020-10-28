@@ -25,8 +25,32 @@ scrape_days=seq(from = as.Date(start_date), to = as.Date(end_date), by = 'days')
 stars <- c("jaemyunglee1")
 posts <- c()
 
+getGroup(group_id = "TensorFlowKR", token=fbAuth)
 
-getPage(page="facebook", token=fbAuth, n=1)
+getPage(page="me", token=fbAuth, n=30)
+getPage(page="KoreaRUsers", token=fbAuth, n=30)
+getPage(page="huffpostkorea", token=fbAuth, n=30)
+
+getPage(page="facebook", token=fbAuth, n=30)
+getPage(page="facebook", token="2507109199588116|35g_uQHLDzmpy172R5oLUyxzf8Y", n=30)
+
+page <- "facebook"
+url <- paste0("https://graph.facebook.com/", page, 
+              "/posts?fields=from,message,created_time,type,link,story,comments.summary(true)", 
+              ",likes.summary(true),shares")
+feed <- TRUE
+if (feed) {
+  url <- paste0("https://graph.facebook.com/", page, 
+                "/feed?fields=from,message,created_time,type,link,story,comments.summary(true)", 
+                ",likes.summary(true),shares")
+}
+n <- 10
+if (n <= 25) {
+  url <- paste0(url, "&limit=", n)
+}
+api <- NULL
+token <- fbAuth
+content <- callAPI(url = url, token = token, api = api)
 
 #공인 페이지로부터 페이지 정보 얻기
 for (i in 1:length(stars)) {

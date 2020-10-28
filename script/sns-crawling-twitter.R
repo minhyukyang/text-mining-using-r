@@ -44,8 +44,8 @@ accesstoken <- my_accesstoken
 accesstokensecret <- my_accesstokensecret
 
 # 인증키 설정 및 다운
-options(RCurloptions = list(cainfo = system.file("CurlSSL", "cacert.pem", packge = "RCurl")))
-download.file(url = "https://curl.haxx.se/ca/cacert.pem", destfile = "data/cacert.pem")
+# options(RCurloptions = list(cainfo = system.file("CurlSSL", "cacert.pem", packge = "RCurl")))
+# download.file(url = "https://curl.haxx.se/ca/cacert.pem", destfile = "data/cacert.pem")
 
 # 인증처리
 setup_twitter_oauth(consumerKey, consumerSecret, accesstoken, accesstokensecret)
@@ -119,7 +119,7 @@ tweets.1 <- gsub("ㅋ", "", tweets.1)
 tweets.1 <- gsub("ㄱ", "", tweets.1)
 tweets.1 <- gsub('[[:punct:]]', '', tweets.1) #특수기호 제거
 tweets.1 <- gsub('[[:cntrl:]]', '', tweets.1) #시스템문자 제거
-tweets.1 <- gsub('\\d+', '', tweets.1) # 숫자 제거
+# tweets.1 <- gsub('\\d+', '', tweets.1) # 숫자 제거
 tweets.1 <- gsub("[^[:alnum:]///' ]", "", tweets.1) # 특수기호 제거
 
 # 데이터 명사 추출
