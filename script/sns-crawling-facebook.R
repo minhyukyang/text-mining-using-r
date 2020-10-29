@@ -3,6 +3,10 @@
 # R분석 : http://airpage.org/xe/language_data/22905
 # R분석2 : https://brunch.co.kr/@dugi/2
 
+## 2020-10-29
+# 현재 코로나19로 개인 인증이 막혀있고 비즈니스 계정으로만 API 서비스 이용 가능
+# - 참고 : https://developers.facebook.com/apps/2507109199588116/settings/basic/
+
 source("script/ini.r")
 
 #필요 패키지
@@ -10,29 +14,34 @@ source("script/ini.r")
 library(Rfacebook)
 
 #페이스북 앱id 정보와 secret 값 입
-fbAuth = fbOAuth(app_id = facebook_app_id, 
+fbAuth <- fbOAuth(app_id = facebook_app_id, 
                  app_secret = facebook_app_secret,
                  extended_permissions = FALSE)
 
-start_date = '2020/10/01'
-end_date = '2020/10/27'
-# start_date = '2016/12/01'
-# end_date = '2017/01/30'
-scrape_days=seq(from = as.Date(start_date), to = as.Date(end_date), by = 'days')
+start_date <- '2020/10/01'
+end_date <- '2020/10/27'
 
-#공인 페이지s
+scrape_days <- seq(from = as.Date(start_date), to = as.Date(end_date), by = 'days')
+
+# 공인 페이지
 # stars <- c("iu.loen", "OfficialLeeMinho", "barackobama")
-stars <- c("jaemyunglee1")
-posts <- c()
+# stars <- c("jaemyunglee1")
+# posts <- c()
 
-getGroup(group_id = "TensorFlowKR", token=fbAuth)
+# searchGroup(name="KoreaRUsers", token="2507109199588116|35g_uQHLDzmpy172R5oLUyxzf8Y")
 
-getPage(page="me", token=fbAuth, n=30)
-getPage(page="KoreaRUsers", token=fbAuth, n=30)
-getPage(page="huffpostkorea", token=fbAuth, n=30)
+getUsers("me", token=fbAuth) # success
+getUsers("facebook", token=fbAuth) # error
 
-getPage(page="facebook", token=fbAuth, n=30)
-getPage(page="facebook", token="2507109199588116|35g_uQHLDzmpy172R5oLUyxzf8Y", n=30)
+getPage(page="me", token=fbAuth, n=10) # error
+getPage(page="huffpostkorea", token=fbAuth, n=30) # error
+getPage(page="facebook", token=fbAuth, n=30) # error
+
+# test
+# me_token <-"EAAjoM9lBKxQBADxMEHr0Xn6rEIUZCNogVOakHzwOmaZCZAclnPTGLCu9kZADZAY74UhhKZCmWUqgBLFKrmnByK0XCVgmvjKmIKxamsPZBMoQLHjcoGRTVOED2PCnIZA40zAxNgm4xWDVBgUJ5KcXOhHlY41RaJ4ZADo2Gsn5zrJsXiWlQ9kbfqZBfsfNrG0IA6HvQZD"
+# me <- getUsers("533419894", token=me_token, private_info=TRUE)
+# my_friends <- getFriends(token=me_token, simplify = FALSE)
+# my_page <- getPage(page="facebook", token=me_token, n=30)
 
 page <- "facebook"
 url <- paste0("https://graph.facebook.com/", page, 
@@ -79,6 +88,7 @@ View(posts)
 library(Rfacebook)
 library(ggplot2)
 library(scales)
+
 # get auth token
 fb_oauth = fbOAuth(app_id = "310016876042099", app_secret = "6772bfc30e27720eac8d67122157aa47", extended_permissions = FALSE)
 
