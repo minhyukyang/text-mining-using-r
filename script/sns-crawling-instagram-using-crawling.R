@@ -1,11 +1,24 @@
+# selenium 다운로드 : https://www.selenium.dev/downloads/
+# chrome 드라이버 다운로드 : https://sites.google.com/a/chromium.org/chromedriver/downloads
+# - 본인 chrome 드라이버 버전에 맞춰 다운로드 필수
+
+
 # https://quantumcomputer.tistory.com/109
 # https://velog.io/@ek1816/%EC%9D%B8%EC%8A%A4%ED%83%80%EA%B7%B8%EB%9E%A8-%EC%82%AC%EB%8B%B9%EB%A7%9B%EC%A7%91-%ED%81%AC%EB%A1%A4%EB%A7%81
 
 # 인스타그램 크롤링 소스스
 # https://github.com/JonasSchroeder/InstaCrawlR
 
-library("RSelenium")
-library("rvest")
+
+# 0. 환경 세팅 ----------------------------------------------------------------
+
+# java -jar selenium-server-standalone-3.141.59.jar -port 4445
+
+library(RSelenium)
+library(rvest)
+library(tidyverse)
+library(stringr)
+library(stringi)
 
 remDr <- remoteDriver(
   remoteServerAddr="localhost",
@@ -13,6 +26,7 @@ remDr <- remoteDriver(
   browserName="chrome")
 
 remDr$open()
+# remDr$closeall()
 
 # url 만들기
 insta_searching <- function(word){
@@ -22,7 +36,7 @@ insta_searching <- function(word){
 
 # 첫번째 게시물 찾아 클릭하는 함수
 select_first <- function(driver){
-  first <- remDr$findElement(using='xpath', value='//*[@id="react-root"]/section/main/article/div[1]/div/div/div[1]/div[1]/a/div[1]/div[2]')
+  first <- driver$findElement(using='xpath', value='//*[@id="react-root"]/section/main/article/div[1]/div/div/div[1]/div[1]/a/div[1]/div[2]')
   # first <- driver.find_element_by_css_selector('div._9AhH0') 
   #find_element_by_css_selector 함수를 사용해 요소 찾기
   first$clickElement()
@@ -33,7 +47,7 @@ select_first <- function(driver){
 get_content <- function(driver){
   
   # 1. 현재 페이지의 HTML 정보 가져오기
-  html <- remDr$getPageSource()[[1]] # html <- driver.page_source
+  html <- driver$getPageSource()[[1]] # html <- driver.page_source
   html <- read_html(html) # soup = BeautifulSoup(html, 'lxml')    
   
   # 2. 본문 내용 가져오기
@@ -44,7 +58,7 @@ get_content <- function(driver){
     content <- html %>% html_nodes("div.C4VMK > span") %>% html_text() %>% .[1] #선택된 노드를 텍스트 화
     # content = soup.select('div.C4VMK > span')[0].text 
   }, error = function(e){
-    content <- ' ' 
+    content <- '' 
   })
     
   # 3. 본문 내용에서 해시태그 가져오기(정규표현식 활용)
@@ -64,7 +78,7 @@ get_content <- function(driver){
     like <- html %>% html_nodes("div.Nm9Fw > button") %>% html_text() %>% str_sub(., 5, -1) #앞에서부터 10자리 글자
     # like = soup.select('div.Nm9Fw > button')[0].text[4:-1] 
   }, error = function(e){
-    like <- 0
+    like <- as.character(0)
   })
 
   # 6. 위치 정보 가져오기
@@ -76,14 +90,20 @@ get_content <- function(driver){
   })
   
   # 7. 수집한 정보 저장하기
-  data <- data.frame(content, date, like, place, tags)
+  result <- tibble("content"=as.character(content), 
+                       "date"=as.Date(date), 
+                       "like"=as.character(like), 
+                       "place"=as.character(place), 
+                       "tags"=as.character(tags))
+  # result$content <- stri_unescape_unicode(gsub("<U\\+(....)>", "", result$content))
   # data = [content, date, like, place, tags]
   
-  return (data)
+  return(result)
 }
 
 move_next <- function(driver){
-  right <- remDr$findElement(using='xpath', value='/html/body/div[4]/div[1]/div/div/a')
+  right <- driver$findElement(using='css', value='a._65Bje.coreSpriteRightPaginationArrow')
+  # right <- driver$findElement(using='xpath', value='/html/body/div[4]/div[1]/div/div/a')
   right$clickElement()
   Sys.sleep(3) # time.sleep(3)
 }
@@ -93,18 +113,8 @@ move_next <- function(driver){
 #     right.click()
 #     time.sleep(3)
 
-library("RSelenium")
-library("rvest")
 
-# 0. 환경 세팅 ----------------------------------------------------------------
-
-remDr <- remoteDriver(remoteServerAddr = "localhost",
-                      port = 4445L,
-                      browserName = "chrome")
-remDr$open()
-# remDr$closeall()
-
-# 1. 크롬으로 인스타그램 - '사당맛집' 검색 ----
+# 1. 크롬으로 인스타그램 - '인하대' 검색 ----
 word <- '인하대'
 url <- insta_searching(word)
 remDr$navigate(url) # driver.get(url) 
@@ -144,17 +154,24 @@ remDr$navigate(url) # driver.get(url)
 Sys.sleep(4) # time.sleep(4) 
 
 # 4. 첫번째 게시글 열기 ----
-select_first() 
+select_first(remDr) 
 
 # 5. 비어있는 변수(results) 만들기 ----
 
-results <- c()
-target <- 10 #크롤링할 게시물 수
+results <- tibble()
+target <- 3 #크롤링할 게시물 수
 
 for (i in 1:target){
-  data <- get_content(driver) #게시물 정보 가져오기
-  data <- rbind(results, data)# results.append(data)
-  move_next(driver)    
+  tmp_data <- get_content(remDr) #게시물 정보 가져오기
+  
+  if (nrow(results) == 0){
+    results <- tibble(tmp_data)
+  } else{
+    results <- bind_rows(results, data.frame(tmp_data)) # results.append(data)
+  }
+  
+  print(tmp_data$tags)
+  move_next(remDr)    
 }
 
-head(results)
+print(results)
