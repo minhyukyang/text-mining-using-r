@@ -12,6 +12,8 @@
 
 # 0. 환경 세팅 ----------------------------------------------------------------
 
+source("script/ini.r")
+
 # java -jar selenium-server-standalone-3.141.59.jar -port 4445
 
 library(RSelenium)
@@ -140,7 +142,7 @@ elem_login_pw <- remDr$findElement(using='xpath', value='//*[@id="loginForm"]/di
 # elem_login = driver.find_element_by_name('password')
 elem_login_pw$clickElement()
 elem_login_pw$clearElement() # elem_login.clear()
-elem_login_pw$sendKeysToElement(list("rlathdus1!")) # elem_login.send_keys('PASSWORD') 
+elem_login_pw$sendKeysToElement(list("PASSWORD")) # elem_login.send_keys('PASSWORD') 
 Sys.sleep(1) # time.sleep(1) 
 
 # 로그인 버튼 클릭
