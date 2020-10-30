@@ -2,7 +2,6 @@
 # chrome 드라이버 다운로드 : https://sites.google.com/a/chromium.org/chromedriver/downloads
 # - 본인 chrome 드라이버 버전에 맞춰 다운로드 필수
 
-
 # https://quantumcomputer.tistory.com/109
 # https://velog.io/@ek1816/%EC%9D%B8%EC%8A%A4%ED%83%80%EA%B7%B8%EB%9E%A8-%EC%82%AC%EB%8B%B9%EB%A7%9B%EC%A7%91-%ED%81%AC%EB%A1%A4%EB%A7%81
 
@@ -92,11 +91,13 @@ get_content <- function(driver){
   })
   
   # 7. 수집한 정보 저장하기
-  result <- tibble("content"=as.character(content), 
-                       "date"=as.Date(date), 
-                       "like"=as.character(like), 
-                       "place"=as.character(place), 
-                       "tags"=as.character(tags))
+  result <- tibble(
+    "content" = as.character(content),
+    "date" = as.Date(date),
+    "like" = as.character(like),
+    "place" = as.character(place),
+    "tags" = as.character(tags)
+  )
   # result$content <- stri_unescape_unicode(gsub("<U\\+(....)>", "", result$content))
   # data = [content, date, like, place, tags]
   
@@ -135,14 +136,14 @@ elem_login_id <- remDr$findElement(using='xpath', value='//*[@id="loginForm"]/di
 # elem_login <- driver.find_element_by_name("username")
 elem_login_id$clickElement()
 elem_login_id$clearElement() # elem_login.clear()
-elem_login_id$sendKeysToElement(list("didalsgur85@naver.com")) # elem_login.send_keys('ID') 
+elem_login_id$sendKeysToElement(list(instagram_id)) # elem_login.send_keys('ID') 
 
 # PW 입력
 elem_login_pw <- remDr$findElement(using='xpath', value='//*[@id="loginForm"]/div[1]/div[2]/div/label/input')
 # elem_login = driver.find_element_by_name('password')
 elem_login_pw$clickElement()
 elem_login_pw$clearElement() # elem_login.clear()
-elem_login_pw$sendKeysToElement(list("PASSWORD")) # elem_login.send_keys('PASSWORD') 
+elem_login_pw$sendKeysToElement(list(instagram_pw)) # elem_login.send_keys('PASSWORD') 
 Sys.sleep(1) # time.sleep(1) 
 
 # 로그인 버튼 클릭
@@ -161,7 +162,7 @@ select_first(remDr)
 # 5. 비어있는 변수(results) 만들기 ----
 
 results <- tibble()
-target <- 3 #크롤링할 게시물 수
+target <- 20 #크롤링할 게시물 수
 
 for (i in 1:target){
   tmp_data <- get_content(remDr) #게시물 정보 가져오기
@@ -177,3 +178,9 @@ for (i in 1:target){
 }
 
 print(results)
+
+# 분석
+# 1. content 길이, 일자별 포스팅수, 장소, 태그개수(평균)
+# 2. #인하대 태그의 주요 등장 키워드 분석
+# 3. #인하대 태그와 함께 등장하는 주요 태그 분석
+# 4. tag 개수와 좋아요 개수의 상관관계

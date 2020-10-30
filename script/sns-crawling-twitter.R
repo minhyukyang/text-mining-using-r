@@ -29,6 +29,7 @@ my_accesstokensecret <- twitter_accesstokensecret
 # library(ROAuth)
 library(twitteR)
 library(tidyverse)
+library(plyr)
 
 # 1.1 환경 설정 ####
 
