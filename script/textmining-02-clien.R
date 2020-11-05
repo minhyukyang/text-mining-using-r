@@ -1,7 +1,7 @@
 ## Text Mining 
-## 2. Clien 데이터 수집 및 분석
+## 02. Clien 데이터 수집 및 분석
 
-# - 참고 : https://r-pyomega.tistory.com/10
+# - 참고 : https://r-pyomega.tistory.com/11
 # - 클리앙 데이터 수집
 # - 명사 빈도 분석
 # - 워드 클라우드
