@@ -1,5 +1,4 @@
-## Text Mining 
-## 02. Clien 데이터 수집 및 분석
+## Text Mining - 02. 클리앙(Clien)
 
 # - 참고 : https://r-pyomega.tistory.com/11
 # - 클리앙 데이터 수집
