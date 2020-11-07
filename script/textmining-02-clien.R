@@ -1,232 +1,221 @@
-## Text Mining - 02. 클리앙(Clien)
+#########################################
+# 02. 클리앙(Clien) 데이터 수집 및 분석 #
+#########################################
 
-# - 참고 : https://r-pyomega.tistory.com/11
-# - 클리앙 데이터 수집
-# - 명사 빈도 분석
-# - 워드 클라우드
+# 1. 클리앙 URL 구조 분석
+# 2. 데이터 수집
+# 3. 데이터 전처리 및 워드 클라우드
 
-# 1) url 검색
-# 클리앙에 접속하여 검색어 입력후 url 추출
-# - 기본 : https://www.clien.net/service/
-# - 핸드폰 검색 후 : https://www.clien.net/service/search?q=%ED%95%B8%EB%93%9C%ED%8F%B0
+# 1. URL 구조 분석  -----------------------------------------------------------
 
-# 2) url 분리
-# - 기본 : https://www.clien.net/service/search
-# - 검색어 : q=핸드폰
+# 1) 클리앙에 접속하여 검색어 입력후 URL 추출
+# - 클리앙 사이트 : https://www.clien.net/
+# - 핸드폰 검색 후 : https://www.clien.net/service/search?q=핸드폰
 
-# 다음 페이지 
-# https://www.clien.net/service/search?q=핸드폰&sort=recency&p=1&boardCd=&isBoard=false
-# https://www.clien.net/service/search?q=%ED%95%B8%EB%93%9C%ED%8F%B0&sort=recency&p=1&boardCd=&isBoard=false
+# - 페이지 번호 변경  
+# 1page : https://www.clien.net/service/search?q=핸드폰
+# 2page : https://www.clien.net/service/search?q=핸드폰&sort=recency&p=1&boardCd=&isBoard=false
+# 3page : https://www.clien.net/service/search?q=핸드폰&sort=recency&p=1&boardCd=&isBoard=false
+# -> 1page 재확인 : https://www.clien.net/service/search?q=핸드폰&sort=recency&p=0&boardCd=&isBoard=false
 
-# url 분리
+# 2) URL 분리
 # - 기본 : https://www.clien.net/service/search
 # - 검색어 : q=핸드폰
 # - 정렬(최신순) : sort=recency 
 # - 페이지 번호 : p=1
 # - 기타 : boardCd=, isBoard=false
 
-# 다시 첫 페이지
-# https://www.clien.net/service/search?q=%ED%95%B8%EB%93%9C%ED%8F%B0&sort=recency&p=0&boardCd=&isBoard=false
-# 페이지 번호가 0으로 시작하는 것 외엔 다른점 없음 -> 첫페이지 번호가 0으로 시작해야 함
 
-# # HTTP 요청 및 응답
-# keyword <- "핸드폰"
-# res_cl <- GET(url = "https://www.clien.net/service/search", 
-#               query = list(q = keyword, 
-#                            sort = "recency", 
-#                            p = 0, 
-#                            boardCd = "",              ## boardCd: 에는 정보가 없는데, ""로 처리하면 됩니다
-#                            isBoard = "false"))
+# 2. 데이터 수집 ---------------------------------------------------------------
 
 # 크롤링 구조 설명
-# 1) 1페이지의 링크를 수집
-# 2) 수집한 링크를 타고가서 해당요소를 수집
-# 3) for문(자동화)으로 검색한 결과 전체 크롤링
-
-
-# 0. 분석 환경 세팅 -------------------------------------------------------------
-
-# 필수 패키지 설치
-# install.packages(c("dplyr", "httr", "jsonlite", "rJava", "RSelenium", "stringr"))
+# 1) 링크 수집
+# 2) 수집한 링크를 타고가서 데이터 추출 
 
 library(httr)
 library(rvest)
 library(stringr)
-
-library(jsonlite)
-library(rJava)
-library(RSelenium)
-
 library(dplyr)
 
+# 1) 링크 수집
 
-# 1. 데이터 수집 ---------------------------------------------------------------
-
-# 링크 수집
-
-n <- 1
+n <- 10
 keyword <- "핸드폰" 
 
-link_cl <- c() 
-date_cl <- c() 
+clien_link <- c() 
+clien_date <- c() 
 
-for(i in 0:n){ 
-  tryCatch({ 
-    res_cl <- GET(url = "https://www.clien.net/service/search", 
-                  query = list(q = keyword, 
-                               sort = "recency", 
-                               p = i, 
-                               boardCd = "", 
-                               isBoard = "false")) 
+for(i in 0:n) {
+  tryCatch({
+    crawling_result <- GET(
+      url = "https://www.clien.net/service/search",
+      query = list(
+        q = keyword,
+        sort = "recency",
+        p = i,
+        boardCd = "",
+        isBoard = "false"
+      )
+    )
     
-    cat('현재', i, '페이지 수집 중! 상태코드는', status_code(x = res_cl), '입니다.\n') 
+    cat("- 페이지 수집 중 : ", i, " / ", n, "\n")
     
-    ##link 
-    link_tmp <- res_cl %>%
+    # LINK 정보 수집
+    link_tmp <- crawling_result %>%
       read_html() %>%
       html_nodes("a.subject_fixed") %>%
       html_attr("href") %>%
       unique()
     
-    link_tmp <- paste0("https://www.clien.net",link_tmp) 
-    link_cl <- append(link_tmp,link_cl)  
+    link_tmp <- paste0("https://www.clien.net", link_tmp)
+    clien_link <- append(link_tmp, clien_link)
     
-    ##date
-    date_tmp <- res_cl %>%  
-      read_html() %>%  
-      html_nodes("span.timestamp") %>% 
-      html_text()  
+    # DATE 정보 수집
+    date_tmp <- crawling_result %>%
+      read_html() %>%
+      html_nodes("span.timestamp") %>%
+      html_text()
     
-    if (length(date_tmp) == 0) { 
-      date_cl <- append(date_cl, "수동확인") 
-    } else { 
-      date_cl <- append(date_cl, date_tmp) 
-    } 
+    if (length(date_tmp) == 0) {
+      clien_date <- append(clien_date, "check")
+    } else {
+      clien_date <- append(clien_date, date_tmp)
+    }
     
     Sys.sleep(time = 1)  ## (중요!) 반복되는 작업으로 디도스(DDOS)로 오인 받지 않을려면 반드시 넣습니다!!
     
-  }, error = function(e) cat("불러올 수 없습니다!\n")) 
+  }, error = function(e)
+    cat("[ERROR] 페이지를 불러올 수 없습니다!\n"))
   
-} 
+}
 
+# 수집 결과 확인
+length(clien_link);head(clien_link); 
+length(clien_date);head(clien_date);
 
-### link 분할 
+# 일자별 키워드 언급량 분석
+library(ggplot)
 
-link_clsp <- link_cl 
-link_cl_url <- c() 
-link_clsp <- str_replace_all(link_clsp,"&sort=recency&boardCd=&isBoard=false","") 
-link_clsp <- strsplit(link_clsp, split="\\?") 
+clien_daily <- as.Date(clien_date, format = '%Y-%m-%d')
+clien_daily <- tibble(clien_daily)
+clien_daily_count <- clien_daily %>% 
+  group_by(clien_daily) %>%
+  summarise(count = n(), .groups = 'drop') %>% 
+  ggplot(data = ., aes(x = clien_daily, y = count)) + 
+    geom_bar(stat="identity", fill="steelblue") + geom_text(aes(label = count), vjust=1.6, color="white") + theme_bw()
+clien_daily_count
 
-for(i in 1:length(link_clsp)){ 
+# 일반 URL 형식으로 수정
+clien_link_url <- c() 
+clien_link_base <- str_replace_all(clien_link,"&sort=recency&boardCd=&isBoard=false","") 
+clien_link_base <- strsplit(clien_link_base, split="\\?")  # 물음표(?)로 URL 분리
+
+# 새로운 URL 리스트 생성
+for(i in 1:length(clien_link_base)){ 
   
-  link_cl_url.tmp <- link_clsp[[i]][1] 
-  link_cl_url <- append(link_cl_url, link_cl_url.tmp) 
+  clien_link_url_tmp <- clien_link_base[[i]][1] 
+  clien_link_url <- append(clien_link_url, clien_link_url_tmp) 
 
 } 
+length(clien_link_url);head(clien_link_url); 
 
-## element 수집 
+# 2) 수집한 링크를 타고가서 데이터 추출 
 
-title_cl <- c() 
-content_cl <- c() 
-comment_cl <- c() 
-click_cnt_cl <- c() 
-comment_cnt_cl <- c() 
-address_cl <- c() 
+# 수집할 데이터 변수 생성
+clien_title <- c() 
+clien_content <- c() 
+clien_comment <- c() 
+clien_click_count <- c() 
+clien_comment_count <- c() 
+clien_address <- c() 
 
 keyword <- "핸드폰" 
 
-for(i in 1:length(link_cl_url)){ 
-  tryCatch({ 
-    res_cl <- GET(url = link_cl_url[i], 
-                  query = list(q = keyword, 
-                               sort = "recency", 
-                               p = 0, 
-                               boardCd = "", 
-                               isBoard = "false")) 
+for(i in 1:length(clien_link_url)) {
+  tryCatch({
+    crawling_result <- GET(
+      url = clien_link_url[i],
+      query = list(
+        q = keyword,
+        sort = "recency",
+        p = 0,
+        boardCd = "",
+        isBoard = "false"
+      )
+    )
     
-    cat('현재', i, '페이지 수집 중! 상태코드는', status_code(x = res_cl), '입니다.\n') 
+    cat("- 페이지 수집 중 : ", i, " / ", length(clien_link_url), "\n")
     
+    # 제목
+    title_tmp <- crawling_result %>%
+      read_html() %>%
+      html_nodes("h3.post_subject") %>%
+      html_text()
     
-    ##제목 
+    if (length(clien_title) == 0) {
+      clien_title <- append(clien_title, "check")
+    } else {
+      clien_title <- append(clien_title, title_tmp)
+    }
     
-    title.tmp <- res_cl %>%  
-      read_html() %>%  
-      html_nodes("h3.post_subject") %>%  
-      html_text() 
+    # 본문
+    content_tmp <- crawling_result %>%
+      read_html() %>%
+      html_nodes("div.post_article") %>%
+      html_text()
     
-    if (length(title_cl) == 0) { 
-      title_cl <- append(title_cl, "수동확인") 
-    } else { 
-      title_cl <- append(title_cl, title.tmp) 
-    } 
+    if (length(clien_content) == 0) {
+      clien_content <- append(clien_content, "check")
+    } else {
+      clien_content <- append(clien_content, content_tmp)
+    }
     
+    # 댓글
+    comment_tmp <- crawling_result %>%
+      read_html() %>%
+      html_nodes("div.comment_view") %>%
+      html_text()
     
+    if (length(clien_comment) == 0) {
+      clien_comment <- append(clien_comment, "check")
+    } else {
+      clien_comment <- append(clien_comment, comment_tmp)
+    }
     
-    ##본문 
+    # 조회수
+    click_cnt_tmp <- crawling_result %>%
+      read_html() %>%
+      html_nodes("span.view_count") %>%
+      html_text()
     
-    content.tmp <- res_cl %>%  
-      read_html() %>%  
-      html_nodes("div.post_article") %>%  
-      html_text() 
+    if (length(clien_click_count) == 0) {
+      clien_click_count <- append(clien_click_count, "check")
+    } else {
+      clien_click_count <- append(clien_click_count, click_cnt_tmp)
+    }
     
-    if (length(content_cl) == 0) { 
-      content_cl <- append(content_cl, "수동확인") 
-    } else { 
-      content_cl <- append(content_cl, content.tmp) 
-    } 
+    # 댓글수
+    comment_cnt_tmp <- crawling_result %>%
+      read_html() %>%
+      html_nodes('div.comment_head') %>%
+      html_text()
     
+    if (length(clien_comment_count) == 0) {
+      clien_comment_count <- append(clien_comment_count, "check")
+    } else {
+      clien_comment_count <- append(clien_comment_count, comment_cnt_tmp)
+    }
     
-    
-    ##댓글 
-    
-    comment.tmp <- res_cl %>%  
-      read_html() %>%  
-      html_nodes("div.comment_view") %>%  
-      html_text() 
-    
-    if (length(comment_cl) == 0) { 
-      comment_cl <- append(comment_cl, "수동확인") 
-    } else { 
-      comment_cl <- append(comment_cl, comment.tmp) 
-    } 
-    
-    
-    
-    ##조회수 
-    
-    click_cnt.tmp <- res_cl %>%  
-      read_html() %>%  
-      html_nodes("span.view_count") %>%  
-      html_text() 
-    
-    if (length(click_cnt_cl) == 0) { 
-      click_cnt_cl <- append(click_cnt_cl, "수동확인") 
-    } else { 
-      click_cnt_cl <- append(click_cnt_cl, click_cnt.tmp) 
-    } 
-    
-    ##댓글수 
-    
-    comment_cnt.tmp <- res_cl %>%  
-      read_html() %>%   
-      html_nodes('div.comment_head') %>% 
-      html_text() 
-    
-    if (length(comment_cnt_cl) == 0) { 
-      comment_cnt_cl <- append(comment_cnt_cl, "수동확인") 
-    } else { 
-      comment_cnt_cl <- append(comment_cnt_cl, comment_cnt.tmp) 
-    } 
-    
-    ##주소 
-    address_cl <- append(address_cl, link_cl[i]) 
+    # 주소
+    clien_address <- append(clien_address, clien_link[i])
     
     Sys.sleep(time = 1)  ## (중요!) 반복되는 작업으로 디도스(DDOS)로 오인 받지 않을려면 반드시 넣습니다!!
     
-  }, error = function(e) cat("불러올 수 없습니다!\n")) 
+  }, error = function(e)
+    cat("[ERROR] 페이지를 불러올 수 없습니다!\n"))
 } 
 
-## triming 
+## ref. triming 
 # https://colab.research.google.com/drive/1FfhWsP9izQcuVl06P30r5cCxELA1ciVE?usp=sharing#scrollTo=fVSpOZIoYOOJ
 # review = re.sub(r'[@%\\*=()/~#&\+á?\xc3\xa1\-\|\.\:\;\!\-\,\_\~\$\'\"]', '',str(texts[i])) #remove punctuation
 # review = re.sub(r'\d+','', str(texts[i]))# remove number
@@ -237,16 +226,60 @@ for(i in 1:length(link_cl_url)){
 # review = re.sub(r"^\s+", '', review) #remove space from start
 # review = re.sub(r'\s+$', '', review) #remove space from the end
 
-title_cl <- str_replace_all(title_cl, "\n|\t", "")
-content_cl <- str_replace_all(content_cl, "\n|\t", "")
-click_cnt_cl <- str_replace_all(click_cnt_cl, "\\D", "")
-comment_cl <- str_replace_all(comment_cl, "\n|\t", "")
-comment_cnt_cl <- str_replace_all(comment_cnt_cl, "\\D", "")
 
-## data.frame 
+# 3. 데이터 전처리 및 워드 클라우드 ----------------------------------------------------
 
-clien_contents <- data.frame(date_cl, title_cl, content_cl, click_cnt_cl, comment_cnt_cl, address_cl)   
-# clien_comments <- data.frame(comment_cl)  
+# 1) 데이터 전처리 하기
+# 2) 명사 추출 및 빈도 분석
+# 3) 워드 클라우드
 
-# write.csv(clien_갤럭시폴드_본문, file = "D:/clien_갤럭시폴드_본문.csv", row.names=FALSE) 
-# write.csv(clien_갤럭시폴드_댓글, file = "D:/clien_갤럭시폴드_댓글.csv", row.names=FALSE
+# 1) 데이터 전처리 하기
+
+head(clien_title)
+head(clien_content, 2)
+head(clien_click_count, 2)
+head(clien_comment, 2)
+head(clien_comment_count, 2)
+
+clien_title <- str_replace_all(clien_title, "\n|\t", "")
+clien_content <- str_replace_all(clien_content, "\n|\t", "")
+clien_click_count <- str_replace_all(clien_click_count, "\\D", "")
+clien_comment <- str_replace_all(clien_comment, "\n|\t", "")
+clien_comment_count <- str_replace_all(clien_comment_count, "\\D", "")
+
+# 결과 데이터셋 만들기
+clien_contents <- data.frame(clien_date, clien_title, clien_content, clien_click_count, clien_comment_count, clien_address)   
+# clien_comments <- data.frame(clien_comment)  
+range(clien_contents$clien_date)
+
+# 2) 명사 추출 및 빈도 분석
+
+# 주요 키워드 분석 
+library(KoNLP)
+# new_term <- c("혁신성장전략회", "산업통상자원부")
+# new_term <- c("독일차", "국토교통부","수입차","가격","현기차","수리비","오일","카톡")
+# new_dic <- data.frame(new_term , "ncn")
+
+buildDictionary(ext_dic = c('sejong', 'woorimalsam', 'insighter'),user_dic = new_dic)
+## ???????? words dictionary was built.
+
+# 명사 추출
+clien_nouns <- lapply(clien_contents$clien_content, extractNoun)
+
+# 단어 빈도 카운트
+clien_nouns_vec <- do.call(c, clien_nouns) # 벡터화
+clien_nouns_count <- table(clien_nouns_vec)
+
+# 단어 전처리 
+clien_nouns_count <- clien_nouns_count[nchar(names(clien_nouns_count)) > 1] # 1글자 이하 제거
+# clien_nouns_count <- clien_nouns_count[nchar(names(clien_nouns_count)) > 1 & names(clien_nouns_count)!="핸드폰"] # 검색 키워드 제거
+sort(clien_nouns_count, decreasing = T)[1:10]
+
+# 3) 워드 클라우드
+
+library(wordcloud2)
+# x11()
+
+wordcloud2(data = sort(clien_nouns_count), minSize = 5) # 기본
+wordcloud2(data = sort(clien_nouns_count, decreasing = T), minSize = 10, color = "random-light") # 랜덤라이트 적용
+
