@@ -15,7 +15,7 @@
 # - 페이지 번호 변경  
 # 1page : https://www.clien.net/service/search?q=핸드폰
 # 2page : https://www.clien.net/service/search?q=핸드폰&sort=recency&p=1&boardCd=&isBoard=false
-# 3page : https://www.clien.net/service/search?q=핸드폰&sort=recency&p=1&boardCd=&isBoard=false
+# 3page : https://www.clien.net/service/search?q=핸드폰&sort=recency&p=2&boardCd=&isBoard=false
 # -> 1page 재확인 : https://www.clien.net/service/search?q=핸드폰&sort=recency&p=0&boardCd=&isBoard=false
 
 # 2) URL 분리
@@ -94,7 +94,7 @@ length(clien_link);head(clien_link);
 length(clien_date);head(clien_date);
 
 # 일자별 키워드 언급량 분석
-library(ggplot)
+library(ggplot2)
 
 clien_daily <- as.Date(clien_date, format = '%Y-%m-%d')
 clien_daily <- tibble(clien_daily)
@@ -260,7 +260,7 @@ library(KoNLP)
 # new_term <- c("독일차", "국토교통부","수입차","가격","현기차","수리비","오일","카톡")
 # new_dic <- data.frame(new_term , "ncn")
 
-buildDictionary(ext_dic = c('sejong', 'woorimalsam', 'insighter'),user_dic = new_dic)
+buildDictionary(ext_dic = c('sejong', 'woorimalsam', 'insighter'))
 ## ???????? words dictionary was built.
 
 # 명사 추출
@@ -280,6 +280,6 @@ sort(clien_nouns_count, decreasing = T)[1:10]
 library(wordcloud2)
 # x11()
 
-wordcloud2(data = sort(clien_nouns_count), minSize = 5) # 기본
-wordcloud2(data = sort(clien_nouns_count, decreasing = T), minSize = 10, color = "random-light") # 랜덤라이트 적용
+wordcloud2(data = sort(clien_nouns_count, decreasing = T), minSize = 5) # 기본
+wordcloud2(data = sort(clien_nouns_count, decreasing = T), minSize = 20, color = "random-light") # 랜덤라이트 적용
 

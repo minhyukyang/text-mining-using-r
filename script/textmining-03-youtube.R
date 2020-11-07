@@ -35,7 +35,6 @@ library(rvest)
 library(RSelenium)
 
 # 1) 크롬 드라이버 띄우기
-
 remDr <- remoteDriver(port = 4445L, # 포트번호 입력
                       browserName = "chrome") #사용할 브라우저
 
@@ -67,7 +66,7 @@ youtube_cnt <- youtube_html %>% html_nodes("#metadata-line > span:nth-child(1)")
 # 생성일 추출 
 youtube_date <- youtube_html %>% html_nodes("#metadata-line > span:nth-child(2)") %>% html_text()
 
-# 본문 추출 
+#
 youtube_contents <- data.frame(youtube_title, youtube_date, youtube_cnt, youtube_url)   
 
 # 3) 영상별 페이지 정보 추출  
@@ -118,7 +117,6 @@ youtube_comments_like <- youtube_html %>% html_nodes("#vote-count-middle") %>% h
 
 youtube_contents <- data.frame(youtube_comments_username, youtube_comments_date, youtube_comments_message, youtube_comments_like)   
 
-
 # 4) youtube_url 내 모든 정보 수집
 
 remDr <- remoteDriver(port = 4445L, # 포트번호 입력
@@ -130,8 +128,8 @@ youtube_contents <- tibble()
 
 num_of_pagedowns <- 2
 
-# for(i in 1:length(youtube_url)){
-for(i in 1:10){
+for(i in 1:length(youtube_url)){
+# for(i in 1:10){
   
   tml_url <- youtube_url[i]
   cat('[',i,'/',length(youtube_url),'] ', tml_url, "\n")
@@ -196,7 +194,7 @@ for(i in 1:10){
 # 2) 명사 추출 및 빈도 분석
 # 3) 워드 클라우드
 
-head(youtube_contents)
+head(youtube_contents, 10)
 
 # 1) 데이터 전처리 하기
 youtube_contents$comments <- str_replace_all(youtube_contents$comments, "[^[:alnum:]]", " ") 
@@ -220,9 +218,10 @@ youtube_nouns_count <- table(youtube_nouns_vec)
 
 # 단어 전처리 
 youtube_nouns_count <- youtube_nouns_count[nchar(names(youtube_nouns_count)) > 1] # 1글자 이하 제거
-# youtube_nouns_count <- youtube_nouns_count[names(youtube_nouns_count)!="박지환"] # 특정 키워드 제거거
-# youtube_nouns_count <- youtube_nouns_count[names(youtube_nouns_count)!="엄마"] # 특정 키워드 제거거
+youtube_nouns_count <- youtube_nouns_count[names(youtube_nouns_count)!="박지환"] # 특정 키워드 제거거
+youtube_nouns_count <- youtube_nouns_count[names(youtube_nouns_count)!="엄마"] # 특정 키워드 제거거
 # clien_nouns_count <- clien_nouns_count[nchar(names(clien_nouns_count)) > 1 & names(clien_nouns_count)!="핸드폰"] # 검색 키워드 제거
+# youtube_contents %>% filter(str_detect(youtube_contents$comments, '박지환')) # 특정 키워드 확인
 sort(youtube_nouns_count, decreasing = T)[1:10]
 
 # 3) 워드 클라우드
