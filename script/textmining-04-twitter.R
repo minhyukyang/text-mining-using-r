@@ -1,10 +1,11 @@
 ###########################################
-# 03. 트위터(twitter) 데이터 수집 및 분석 #
+# 04. 트위터(twitter) 데이터 수집 및 분석 #
 ###########################################
 
 # 1. 트위터 개발자 등록 
 # 2. Twitter 에서 데이터 가져오기
-# 3. 데이터 전처리 및 워드 클라우드
+# 3. 데이터 전처리
+# 4. 워드 클라우드, 감성분석
 
 # 1. 트위터 개발자 등록  --------------------------------------------------------
 # - twitter에서 데이터를 수집하기 위해서는 먼저 twitter에서 개발자 인증을 받아야 합니다.
@@ -45,7 +46,7 @@ accesstokensecret <- my_accesstokensecret
 
 # 인증키 설정 및 다운
 # options(RCurloptions = list(cainfo = system.file("CurlSSL", "cacert.pem", packge = "RCurl")))
-# download.file(url = "https://curl.haxx.se/ca/cacert.pem", destfile = "data/cacert.pem")
+download.file(url = "https://curl.haxx.se/ca/cacert.pem", destfile = "data/cacert.pem")
 
 # 인증처리
 setup_twitter_oauth(consumerKey, consumerSecret, accesstoken, accesstokensecret)
@@ -73,9 +74,7 @@ str(tweets_inha_df)
 tweets_inha_df %>% filter(isRetweet == TRUE) # 리트윗
 tweets_inha_df %>% filter(isRetweet == FALSE)
 
-# 3. 데이터 전처리 및 워드 클라우드 ----------------------------------------------------
-
-# 1) 데이터 전처리
+# 3. 데이터 전처리  ----------------------------------------------------
 
 # 패키지 로드
 # - 다운로드 : https://java.com/ko/
@@ -114,11 +113,13 @@ tweet_nouns_count <- table(tweet_nouns_vec)
 
 # 단어 전처리 
 tweet_cnouns <- tweet_nouns_count[nchar(names(tweet_nouns_count)) > 1] # 1글자 이하 제거
-tweet_cnouns <- tweet_cnouns[names(tweet_cnouns)!="마사지"] # 특정 키워드 제거거
+# tweet_cnouns <- tweet_cnouns[names(tweet_cnouns)!="마사지"] # 특정 키워드 제거거
 # youtube_contents %>% filter(str_detect(youtube_contents$comments, '박지환')) # 특정 키워드 확인
 sort(tweet_cnouns, decreasing = T)[1:10]
 
-# 2) WordCloud 그려보기
+# 4. 워드 클라우드, 감성분석 --------------------------------------------------------
+
+# 1) WordCloud 그려보기
 
 # install.packages("wordcloud2")
 library(wordcloud2)
@@ -126,9 +127,14 @@ library(wordcloud2)
 wordcloud2(data = sort(tweet_cnouns, decreasing = T), minSize = 5) # 기본
 wordcloud2(data = sort(tweet_cnouns, decreasing = T), minSize = 10, color = "random-light") # 랜덤라이트 적용
 
-# 3) 긍부정 분석
+# 2) 긍부정 분석
 # remotes::install_github("mrchypark/KnuSentiLexR")
 # https://github.com/mrchypark/KnuSentiLexR/blob/master/data-raw/SentiWord_info.json
+
+## KnuSentiLex는 군산대 Data Intelligence Lab에서 기존 사전들을 참조, 활용하여 
+## 18년 구축한 감성 사전. 구조가 단순하고 이모티콘 등을 추가한 점이 장점인 반면, 
+## 형태소 형식이 아니라 점수의 신뢰도가 낮은 편임.
+
 library(KnuSentiLexR)
 library(tidytext)
 

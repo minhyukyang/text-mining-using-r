@@ -1,33 +1,26 @@
+###########################################
+# 05. 인스타그램 데이터 수집 및 분석 #
+###########################################
+
+# 1. 사전 환경 세팅
+# 2. 데이터 수집
+# 3. 데이터 전처리 및 워드 클라우드
+
+# 1. 사전 환경 세팅 -------------------------------------------------------------
+
 # selenium 다운로드 : https://www.selenium.dev/downloads/
 # chrome 드라이버 다운로드 : https://sites.google.com/a/chromium.org/chromedriver/downloads
 # - 본인 chrome 드라이버 버전에 맞춰 다운로드 필수
 
-# https://quantumcomputer.tistory.com/109
-# https://velog.io/@ek1816/%EC%9D%B8%EC%8A%A4%ED%83%80%EA%B7%B8%EB%9E%A8-%EC%82%AC%EB%8B%B9%EB%A7%9B%EC%A7%91-%ED%81%AC%EB%A1%A4%EB%A7%81
-
-# 인스타그램 크롤링 소스스
-# https://github.com/JonasSchroeder/InstaCrawlR
-
-
-# 0. 환경 세팅 ----------------------------------------------------------------
+# 1) 환경 세팅
 
 source("script/ini.r")
-
 # java -jar selenium-server-standalone-3.141.59.jar -port 4445
 
 library(RSelenium)
 library(rvest)
 library(tidyverse)
-library(stringr)
-library(stringi)
-
-remDr <- remoteDriver(
-  remoteServerAddr="localhost",
-  port=4445L,
-  browserName="chrome")
-
-remDr$open()
-# remDr$closeall()
+library(dplyr)
 
 # url 만들기
 insta_searching <- function(word){
@@ -90,8 +83,17 @@ get_content <- function(driver){
     place <- ''
   })
   
-  # 7. 수집한 정보 저장하기
+  # 7. ID 가져오기
+  tryCatch({
+    user_id <- html %>% html_nodes("div.e1e1d") %>% html_text()
+    # place = soup.select('div.JF9hh')[0].text
+  }, error = function(e){
+    user_id <- ''
+  })
+
+  # 8. 수집한 정보 저장하기
   result <- tibble(
+    "user_id" = as.character(user_id),
     "content" = as.character(content),
     "date" = as.Date(date),
     "like" = as.character(like),
@@ -111,20 +113,26 @@ move_next <- function(driver){
   Sys.sleep(3) # time.sleep(3)
 }
 
-# def move_next(driver):
-#     right = driver.find_element_by_css_selector('a._65Bje.coreSpriteRightPaginationArrow') 
-#     right.click()
-#     time.sleep(3)
 
+# 2. 데이터 수집 ---------------------------------------------------------------
 
-# 1. 크롬으로 인스타그램 - '인하대' 검색 ----
-word <- '제주도'
+# 0) chrome 창 열기
+remDr <- remoteDriver(
+  remoteServerAddr="localhost",
+  port=4445L,
+  browserName="chrome")
+
+remDr$open()
+# remDr$closeall()
+
+# 1) 크롬으로 인스타그램 - '인하대' 검색
+word <- '인하대'
 url <- insta_searching(word)
 remDr$navigate(url) # driver.get(url) 
 Sys.sleep(4) # time.sleep(4) 
 
-# 2. 로그인 하기 ----
-# 로그인 버튼 클릭
+# 2) 로그인 하기
+# 로그인 버튼 클릭 
 login_section <- remDr$findElement(using='xpath', value='//*[@id="react-root"]/section/nav/div[2]/div/div/div[3]/div/span/a[1]/button')
 # login_section <- '//*[@id="react-root"]/section/nav/div[2]/div/div/div[3]/div/span/a[1]/button'
 login_section$clickElement()
@@ -152,14 +160,14 @@ elem_login_button <- remDr$findElement(using='xpath', value='//*[@id="loginForm"
 elem_login_button$clickElement() # driver.find_element_by_xpath(xpath).click() 
 Sys.sleep(4) # time.sleep(4) 
 
-# 3. 검색페이지 접속하기 ----
+# 3) 검색페이지 접속하기
 remDr$navigate(url) # driver.get(url)
 Sys.sleep(4) # time.sleep(4) 
 
-# 4. 첫번째 게시글 열기 ----
+# 4) 첫번째 게시글 열기 
 select_first(remDr) 
 
-# 5. 비어있는 변수(results) 만들기 ----
+# 5) 데이터 수집하기 
 
 results <- tibble()
 target <- 20 #크롤링할 게시물 수
@@ -177,10 +185,61 @@ for (i in 1:target){
   move_next(remDr)    
 }
 
-print(results)
+view(results)
 
-# 분석
-# 1. content 길이, 일자별 포스팅수, 장소, 태그개수(평균)
-# 2. #인하대 태그의 주요 등장 키워드 분석
-# 3. #인하대 태그와 함께 등장하는 주요 태그 분석
-# 4. tag 개수와 좋아요 개수의 상관관계
+# 6) 분석
+# https://www.si.re.kr/node/62271
+
+# 일자별 포스팅 건수
+
+library(ggplot2)
+
+insta_daily <- as.Date(results$date, format = '%Y-%m-%d')
+insta_daily <- tibble(insta_daily)
+insta_daily_count <- insta_daily %>% 
+  group_by(insta_daily) %>% 
+  dplyr::summarise(count = n(), .groups = 'drop') %>%
+  ggplot(data = ., aes(x = insta_daily, y = count)) + 
+  geom_bar(stat="identity", fill="steelblue") + geom_text(aes(label = count), vjust=1, color="white") + theme_bw() + theme(axis.text.x=element_text(angle=90, vjust=0.5)) +
+  scale_x_date(breaks=seq(min(insta_daily$insta_daily),max(insta_daily$insta_daily), "1 day"), 
+               minor_breaks="1 day")
+insta_daily_count
+
+# content 분석
+library(KoNLP)
+library(widyr)
+
+results %>% 
+  filter(!is.na(content)) %>%
+  mutate(content = str_replace_all(content, "[^가-힝a-zA-Z\\s]", " ")) %>%
+  # mutate(content = str_replace_all(content, "[[:punct:]]", " ")) %>%
+  unnest_tokens(sent, content, 
+                token = "sentences") %>% 
+  dplyr::mutate(id = as.numeric(1:n())) %>% 
+  unnest_tokens(pos, sent, 
+                token = SimplePos09) %>% 
+  select(id, pos) %>% 
+  filter(str_detect(pos, "/n|/v(v|a)")) %>% 
+  mutate(pos = 
+           str_remove_all(pos, "/.*$")) %>% 
+  filter(nchar(pos) > 1)%>% 
+  pairwise_count(pos, id, 
+                 sort = T, upper = F) -> 
+  insta_pos
+
+insta_pos %>%
+  filter(item1 == "인하대후문")
+
+# #인하대 태그 분석
+results %>% 
+  dplyr::mutate(id = as.numeric(1:n())) %>% 
+  unnest_tokens(insta_tags, tags, token = 'regex', pattern=",") %>% 
+  select(id, insta_tags) %>% 
+  mutate(insta_tags = str_remove_all(insta_tags, "/.*$")) %>% 
+  filter(nchar(insta_tags) > 1) %>% 
+  pairwise_count(insta_tags, id, sort = T, upper = F) -> 
+  insta_tags
+
+# #인하대 연관어 확인
+insta_tags %>%
+  filter(item1 == "#인하대")
